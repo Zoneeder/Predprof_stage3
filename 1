@@ -455,3 +455,105 @@ if __name__ == '__main__':
     </div>
   </div>
 </section>
+
+
+---------
+
+from flask import Flask, render_template, request, url_for
+import sqlite3
+import os
+import matplotlib.pyplot as plt
+import numpy as np
+import PIL
+import json
+
+app = Flask(__name__)
+
+# Путь к базе данных
+DATABASE = 'database.db'
+UPLOAD_FOLDER = "static/images"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+# Создаем папку для загрузок, если она не существует
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+def get_db_connection():
+    """Создает соединение с базой данных."""
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row  # Возвращает строки как словари
+    return conn
+
+def create_image_from_data(data, output_path):
+    """
+    Создает изображение из данных и сохраняет его.
+    """
+    try:
+        # Преобразование данных в массив numpy
+        data_array = np.asarray(data, dtype="uint8")
+
+        # Создание изображения из массива
+        img = PIL.Image.fromarray(data_array)
+
+        # Сохранение изображения
+        img.save(output_path)
+        return True
+    except Exception as e:
+        print(f"Ошибка при создании изображения: {e}")
+        return False
+
+
+# Главная страница
+@app.route('/')
+def home():
+    # Получаем последние данные из базы данных
+    conn = get_db_connection()
+    latest_data = conn.execute('SELECT * FROM image_data ORDER BY id DESC LIMIT 1').fetchone()
+    conn.close()
+
+    image_url = None
+
+    if latest_data:
+        # Преобразуем данные из JSON
+        data = json.loads(latest_data['data'])
+        # Создаем изображение из данных
+        output_image_name = "image.png"
+        output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_image_name)
+        if create_image_from_data(data, output_path):
+            image_url = url_for('static', filename='images/image.png')
+
+    return render_template('base.html', image_url=image_url)
+
+
+# Обработка загрузки файла
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'jsonFile' not in request.files:
+        return "Файл не найден", 400
+
+    file = request.files['jsonFile']
+
+    if file.filename == '':
+        return "Файл не выбран", 400
+
+    if file and file.filename.endswith('.json'):
+        try:
+            # Чтение JSON-файла
+            data = json.load(file)
+            array_data = data['message']['data']
+
+            # Сохранение данных в базу данных
+            conn = get_db_connection()
+            conn.execute('INSERT INTO image_data (data) VALUES (?)', (json.dumps(array_data),))
+            conn.commit()
+            conn.close()
+
+            return "Файл успешно загружен и данные сохранены в базу данных", 200
+        except Exception as e:
+            return f"Ошибка при обработке файла: {e}", 500
+    else:
+        return "Недопустимый формат файла. Загрузите файл JSON.", 400
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
