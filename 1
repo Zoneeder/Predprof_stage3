@@ -170,3 +170,73 @@ def upload_file():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+
+--------------------------------------------
+
+import matplotlib.pyplot as plt
+import numpy as np
+from flask import *
+from random import randrange
+import PIL
+import os
+
+app = Flask(__name__)
+
+UPLOAD_FOLDER = "uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+def load_image(file, name):
+    import matplotlib.pyplot as plt
+    import PIL
+    import numpy as np
+    import json
+    import os
+
+    with open(file, encoding='utf-8') as file:
+        dictory = json.load(file)
+        array = dictory['message']['data']
+        print(dictory)
+            
+
+        plt.style.use('_mpl-gallery-nogrid')
+
+        data = np.asarray(array, dtype="uint8")
+        img = PIL.Image.fromarray(data)
+
+        plt.imsave(name, img, origin='upper')
+
+        img = PIL.Image.open(os.path.abspath(name))
+        return img
+    
+
+
+# Главная страница с отображением продуктов конкретного пользователя
+@app.route('/')
+def home():
+    return render_template('base.html')
+
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'jsonFile' not in request.files:
+        return "Файл не найден", 400
+
+    file = request.files['jsonFile']
+
+    if file.filename == '':
+        return "Файл не выбран", 400
+
+    if file and file.filename.endswith('.json'):
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(file_path)
+        print()
+        load_image(file_path, "image")
+    else:
+        return "Недопустимый формат файла. Загрузите файл JSON.", 400
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
