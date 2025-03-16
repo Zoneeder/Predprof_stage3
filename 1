@@ -240,3 +240,89 @@ def upload_file():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+    ---------------
+    import matplotlib.pyplot as plt
+import numpy as np
+from flask import Flask, render_template, request, send_file
+import PIL
+import os
+import json
+
+app = Flask(__name__)
+
+UPLOAD_FOLDER = "uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+# Создаем папку для загрузок, если она не существует
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+def load_image(file_path, output_image_name):
+    """
+    Загружает JSON-файл, создает изображение и сохраняет его.
+    """
+    try:
+        # Чтение JSON-файла
+        with open(file_path, encoding='utf-8') as file:
+            data = json.load(file)
+        
+        # Извлечение массива данных
+        array = data['message']['data']
+        print("Данные из JSON:", data)
+
+        # Преобразование данных в массив numpy
+        data_array = np.asarray(array, dtype="uint8")
+
+        # Создание изображения из массива
+        img = PIL.Image.fromarray(data_array)
+
+        # Сохранение изображения
+        output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_image_name)
+        img.save(output_path)
+
+        return output_path
+    except Exception as e:
+        print(f"Ошибка при обработке файла: {e}")
+        return None
+
+
+# Главная страница
+@app.route('/')
+def home():
+    return render_template('base.html')
+
+
+# Обработка загрузки файла
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'jsonFile' not in request.files:
+        return "Файл не найден", 400
+
+    file = request.files['jsonFile']
+
+    if file.filename == '':
+        return "Файл не выбран", 400
+
+    if file and file.filename.endswith('.json'):
+        # Сохранение файла на сервере
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(file_path)
+
+        # Обработка файла и создание изображения
+        output_image_name = "output_image.png"
+        image_path = load_image(file_path, output_image_name)
+
+        if image_path:
+            # Возврат изображения пользователю
+            return send_file(image_path, mimetype='image/png')
+        else:
+            return "Ошибка при обработке JSON-файла", 500
+    else:
+        return "Недопустимый формат файла. Загрузите файл JSON.", 400
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
