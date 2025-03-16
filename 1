@@ -438,3 +438,20 @@ if __name__ == '__main__':
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+
+---------
+
+<section class="py-5 text-center container">
+  <div class="row py-lg-5">
+    <div class="col-lg-6 col-md-8 mx-auto">
+      <h1 class="fw-light">Здесь будет карта</h1>
+      <!-- Динамическое отображение изображения -->
+      {% if image_url %}
+        <img src="{{ image_url }}" alt="Карта" class="img-fluid">
+      {% else %}
+        <p>Изображение не загружено.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
