@@ -122,3 +122,51 @@ def load_image(file, name):
         return img
 
 image = load_image('api.json', 'bebe.png')
+
+
+from flask import Flask, render_template, request, jsonify
+import os
+import json
+
+app = Flask(__name__)
+
+# Папка для загрузки файлов
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Создаем папку, если она не существует
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    # Проверяем, есть ли файл в запросе
+    if 'jsonFile' not in request.files:
+        return "Файл не найден", 400
+
+    file = request.files['jsonFile']
+
+    # Проверяем, что файл был выбран
+    if file.filename == '':
+        return "Файл не выбран", 400
+
+    # Проверяем, что файл имеет расширение .json
+    if file and file.filename.endswith('.json'):
+        # Сохраняем файл на сервере
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(file_path)
+
+        # Читаем и обрабатываем JSON-файл
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            # Например, просто возвращаем данные в виде JSON
+            return jsonify(data)
+    else:
+        return "Недопустимый формат файла. Загрузите файл JSON.", 400
+
+if __name__ == '__main__':
+    app.run(debug=True)
