@@ -92,3 +92,33 @@ img.show()
 ax.imshow(img, origin='upper', cmap='rainbow')
 
 plt.show()
+
+
+
+def load_image(file, name):
+    import matplotlib.pyplot as plt
+    import PIL
+    import numpy as np
+    import json
+    import os
+
+    with open(file, encoding='utf-8') as file:
+        dictory = json.load(file)
+        array = dictory['message']['data']
+        print(dictory)
+            
+
+        plt.style.use('_mpl-gallery-nogrid')
+
+        data = np.asarray(array, dtype="uint8")
+        img = PIL.Image.fromarray(data)
+
+        plt.imsave(name, img, origin='upper')
+        plt.imshow(img, origin='upper')
+
+        plt.show()
+
+        img = PIL.Image.open(os.path.abspath(name))
+        return img
+
+image = load_image('api.json', 'bebe.png')
