@@ -557,3 +557,73 @@ def upload_file():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+def load_image(file, name):
+    import matplotlib.pyplot as plt
+    import PIL
+    import numpy as np
+    import json
+    import os
+
+    with open(file, encoding='utf-8') as file:
+        dictory = json.load(file)
+        array = dictory['message']['data']
+            
+
+        plt.style.use('_mpl-gallery-nogrid')
+
+        data = np.asarray(array, dtype="uint8")
+        img = PIL.Image.fromarray(data)
+
+        plt.imsave(name, img, origin='upper')
+        plt.imshow(img, origin='upper', cmap='rainbow')
+
+        plt.show()
+
+        img = PIL.Image.open(os.path.abspath(name))
+        return img
+
+image = load_image('api.json', 'bebe.png')
+
+def dots(X, Y, R, image_name):
+    import PIL
+    import os
+    img = PIL.Image.open(os.path.abspath(image_name))
+    height = sum(img.getpixel((X, Y))[:-1:])
+    print(height)
+    def dist(x1, y1, x2, y2, R):
+        return (abs(x1 - x2) ** 2 + abs(y1 - y2) ** 2) ** 0.5 <= R
+    spis = []
+    for x in range(X - R, X + R + 1):
+        for y in range(Y - R, Y + R + 1):
+            if dist(x, y, X, Y, R):
+                try:
+                    if height <= sum(img.getpixel((x, y))[:-1:]):
+                        spis.append([x, y])
+                except Exception:
+                    pass
+    return [(X, Y)] + spis
+
+def put_base(dots, image_name):
+    import PIL
+    import os
+
+    img = PIL.Image.open(os.path.abspath(image_name))
+    for i in dots[1::]:
+        try:
+            img.putpixel(i, tuple([(img.getpixel(i)[0] + 100) % 256] + list(img.getpixel(i)[1::])))
+        except Exception:
+            pass
+    
+    img.putpixel(dots[0], 0)
+    
+    img.save(image_name)
+
+        
+
+spis = dots(61, 30, 5, 'bebe.png')
+spis2 = dots(51, 30, 9, 'bebe.png')
+put_base(spis, 'bebe.png')
+put_base(spis2, 'bebe.png')-
